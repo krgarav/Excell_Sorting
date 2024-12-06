@@ -47,7 +47,7 @@ const uploadFile = (req, res) => {
           // Push the parsed row into the array
           const school_code = row["SCHOOL_CODE"];
           parsedData.push({
-            SL_N0: 0,
+            SL_NO: serial_no + "0",
             ROLL_NO: serial_no,
             NAME: name,
             FATHER_NAME: fatherName,
@@ -61,7 +61,6 @@ const uploadFile = (req, res) => {
             DISTRICT: district,
             STATE: state,
             YEAR: year,
-            HEADER: school_code,
             TOTAL_MARKS: totalMarks,
             SCHOOL_CODE: school_code,
             // Add this field for sorting
@@ -76,8 +75,8 @@ const uploadFile = (req, res) => {
           if (a.TEHSIL !== b.TEHSIL) {
             return a.TEHSIL.localeCompare(b.TEHSIL); // Sort by TEHSIL
           }
-          if (a.HEADER !== b.HEADER) {
-            return a.HEADER.localeCompare(b.HEADER); // Sort by SCHOOL_CODE
+          if (a.SCHOOL_CODE !== b.SCHOOL_CODE) {
+            return a.SCHOOL_CODE.localeCompare(b.SCHOOL_CODE); // Sort by SCHOOL_CODE
           }
           if (a.CLASS !== b.CLASS) {
             return a.CLASS.localeCompare(b.CLASS); // Sort by CLASS_CODE
@@ -99,27 +98,66 @@ const uploadFile = (req, res) => {
           }
 
           // Assign SL_NO and HEADER
-          item.SL_N0 = count;
-          item.HEADER = `${item.HEADER}/${count}`;
-
+          item.SL_NO = count;
+          item.HEADER = `${item.SCHOOL_CODE}/${count}`;
+          console.log(`${item.SCHOOL_CODE}/${count}`);
           // Increment count for the next item in the group
           count++;
 
           // Update previous HEADER for the next comparison
           prevHeader = item.SCHOOL_CODE;
         });
-        // Generate CSV file
+        parsedData.forEach((item) => {
+          // Check some condition if needed (e.g., item.TOTAL_MARKS, item.SCHOOL_CODE, etc.)
+          // If the condition is met, delete the properties
+          if (item.TOTAL_MARKS) {
+            delete item.TOTAL_MARKS; // Delete TOTAL_MARKS property
+          }
+          if (item.SCHOOL_CODE) {
+            delete item.SCHOOL_CODE; // Delete SCHOOL_CODE property
+          }
+        });
+        // Generate CSV filecls
         try {
           const csvFilePath = path.join(targetDirectory, "processed_data.csv");
-          const headers =
-            Object.keys(parsedData[0])
-              .filter((key) => key !== "TOTAL_MARKS") // Remove TOTAL_MARKS from headers
-              .join(",") + "\n"; // Generate CSV headers
 
-          const rows = parsedData
+          // Define the desired order of columns (place HEADER before DISTRICT)
+          const columnOrder = [
+            "SL_NO",
+            "ROLL_NO",
+            "NAME",
+            "FATHER_NAME",
+            "CLASS",
+            "SECTION",
+            "SCHOOL",
+            "TEHSIL",
+            "50 OR LESS",
+            "51-80",
+            "81+",
+            "HEADER",
+            "DISTRICT",
+            "STATE",
+            "YEAR",
+          ];
+
+          // Function to rearrange the columns based on columnOrder
+          const rearrangedData = parsedData.map((row) => {
+            const reorderedRow = {};
+            columnOrder.forEach((key) => {
+              if (row.hasOwnProperty(key)) {
+                reorderedRow[key] = row[key]; // Add the value from the row in the correct order
+              }
+            });
+            return reorderedRow;
+          });
+
+          // Generate CSV headers based on the rearranged data
+          const headers = columnOrder.join(",") + "\n"; // Generate CSV headers
+
+          // Generate CSV rows
+          const rows = rearrangedData
             .map((row) =>
               Object.values(row)
-                .filter((value, index) => index !== 13) // Remove TOTAL_MARKS value from rows
                 .map((value) => `"${value}"`) // Quote each value to handle special characters
                 .join(",")
             )
