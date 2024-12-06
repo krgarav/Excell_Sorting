@@ -166,9 +166,16 @@ const uploadFile = (req, res) => {
           const csvContent = headers + rows; // Combine headers and rows
           fs.writeFileSync(csvFilePath, csvContent); // Write CSV file
 
-          res.status(200).json({
-            message: "File processed successfully and CSV created",
-            csvFilePath,
+          // Send the CSV file for download
+          res.download(csvFilePath, "processed_data.csv", (err) => {
+            if (err) {
+              res
+                .status(500)
+                .json({
+                  message: "Error downloading file",
+                  error: err.message,
+                });
+            }
           });
         } catch (csvError) {
           res.status(500).json({

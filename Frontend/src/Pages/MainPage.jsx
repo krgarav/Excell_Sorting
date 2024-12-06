@@ -92,11 +92,21 @@ function MainPage() {
 
       const res = await axios.post("http://localhost:7000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        responseType: "blob",
       });
+      // Create a download link for the file
+      const blob = res.data;
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "processed_data.csv"; // Set the name of the file to be downloaded
+      link.click(); // Trigger download
+
+      // Optionally, you can clean up the link element after download
+      URL.revokeObjectURL(link.href);
 
       // On successful upload
-      toast.success("File uploaded and processed successfully!");
-      navigate("/result", { state: res.data });
+      toast.success("File uploaded and downloaded successfully!");
+      // navigate("/result", { state: res.data });
     } catch (error) {
       // On error, display toast and log error to console
       toast.error("An error occurred while processing the file.");
