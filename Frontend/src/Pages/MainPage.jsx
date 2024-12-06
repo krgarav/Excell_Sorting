@@ -74,14 +74,10 @@ function MainPage() {
       toast.error("No file selected!!!");
       return;
     }
-    if (!directoryPath) {
-      toast.error("Directory path cannot be empty!!!");
-      return;
-    }
 
     try {
       setIsProcessing(true);
-      if (!file || !directoryPath) {
+      if (!file) {
         toast.error("Please provide both a file and a directory path.");
         return;
       }
