@@ -8,6 +8,7 @@ import axios from "axios";
 import "./Mainpage.css";
 import { useNavigate } from "react-router-dom";
 import Loader from "../Component/Loader";
+import * as XLSX from "xlsx";
 const styles = {
   container: {
     width: "400px",
@@ -63,10 +64,51 @@ function MainPage() {
     if (selectedFile && selectedFile.type === "text/csv") {
       setFile(selectedFile);
       setMessage(""); // Clear previous messages
+    } else if (
+      selectedFile.type === "application/vnd.ms-excel" || // .xls type
+      selectedFile.type ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" // .xlsx type
+    ) {
+      setMessage(""); // Clear previous messages
+      convertExcelToCsv(selectedFile).then((csvFile) => {
+        setFile(csvFile); // Set the converted CSV file in the state
+      }); // Convert Excel to CSV
     } else {
       setFile(null);
       setMessage("Please select a valid CSV file.");
     }
+  };
+  // Function to convert Excel to CSV
+  const convertExcelToCsv = (excelFile) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const data = e.target.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+
+        // Convert the first sheet to CSV format
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]]; // Get the first sheet
+        const csvData = XLSX.utils.sheet_to_csv(worksheet);
+
+        // Create a Blob from the CSV data
+        const blob = new Blob([csvData], { type: "text/csv" });
+
+        // Create a new File object for the CSV
+        const csvFile = new File([blob], "converted-file.csv", {
+          type: "text/csv",
+        });
+
+        // Resolve the promise with the CSV file
+        resolve(csvFile);
+      };
+
+      reader.onerror = (error) => {
+        reject(error); // Reject the promise if an error occurs
+      };
+
+      reader.readAsBinaryString(excelFile); // Read the Excel file as binary string
+    });
   };
   // Handle file upload (simulated)
   const handleUpload = async () => {
