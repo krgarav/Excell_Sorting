@@ -201,11 +201,6 @@ const uploadFile = (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" }); // Send response and exit function
     }
-
-    const filePath = path.join(__dirname, "../uploads", req.file.filename);
-    const fileExtension = path.extname(req.file.filename).toLowerCase();
-    const parsedData = []; // Array to store parsed rows
-
     const expectedHeaders = [
       "SR_NO",
       "NAME",
@@ -221,24 +216,42 @@ const uploadFile = (req, res) => {
       "TOTAL_MARKS",
       "YEAR",
     ];
+    // Function to validate headers
+    const validateHeaders = (data) => {
+      console.log(data[0])
+      const fileHeaders = Object.keys(data[0]);
+      const missingHeaders = expectedHeaders.filter(
+        (header) => !fileHeaders.includes(header)
+      );
+      console.log(missingHeaders);
+      if (missingHeaders.length > 0) {
+        throw new Error(
+          `Missing required headers: ${missingHeaders.join(", ")}`
+        );
+      }
+    };
+
+    const filePath = path.join(__dirname, "../uploads", req.file.filename);
+    const fileExtension = path.extname(req.file.filename).toLowerCase();
+    const parsedData = []; // Array to store parsed rows
 
     const parseExcelFile = (filePath) => {
       const workbook = xlsx.readFile(filePath);
       const sheetName = workbook.SheetNames[0]; // Assuming data is in the first sheet
       const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], {
-        defval: "",
-      }); // Use defval to default empty cells to ""
-
-      // Loop through each row and ensure all expected headers are present
-      rows.forEach((row) => {
-        expectedHeaders.forEach((header) => {
-          if (!row.hasOwnProperty(header)) {
-            row[header] = ""; // If header is missing, set its value to an empty string
-          }
-        });
+        defval: "", // Default blank cells to ""
       });
-
-      return rows;
+    
+      // Ensure no new headers are added; only blank values are filled with ""
+      const cleanedRows = rows.map((row) => {
+        const cleanedRow = {};
+        Object.keys(row).forEach((key) => {
+          cleanedRow[key] = row[key] === undefined || row[key] === null ? "" : row[key];
+        });
+        return cleanedRow;
+      });
+    
+      return cleanedRows;
     };
 
     const processParsedData = (data) => {
@@ -389,8 +402,17 @@ const uploadFile = (req, res) => {
         fs.mkdirSync(targetDirectory, { recursive: true });
       }
 
-      const excelFilePath = path.join(targetDirectory, "processed_data.xlsx");
+      // Format the current time for a valid file name
+      const currentTime = new Date()
+        .toISOString()
+        .replace(/:/g, "-")
+        .replace("T", "_")
+        .split(".")[0]; // Replace colons, keep date and time part only
 
+      const excelFilePath = path.join(
+        targetDirectory,
+        `processed_data_${currentTime}.xlsx`
+      );
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Processed Data");
 
@@ -458,8 +480,8 @@ const uploadFile = (req, res) => {
         .on("data", (row) => parsedData.push(row))
         .on("end", () => {
           // Now call generateExcel with the parsed data
+          validateHeaders(parsedData);
           const procss = processParsedData(parsedData);
-          console.log(procss);
           generateExcel(procss);
         })
         .on("error", (error) => {
@@ -473,6 +495,7 @@ const uploadFile = (req, res) => {
         });
     } else if (fileExtension === ".xls" || fileExtension === ".xlsx") {
       const data = parseExcelFile(filePath);
+      validateHeaders(data);
       generateExcel(processParsedData(data));
     } else {
       return res.status(400).json({
