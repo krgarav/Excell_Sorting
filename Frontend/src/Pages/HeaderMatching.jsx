@@ -19,6 +19,8 @@ const HeaderMatching = () => {
     "YEAR",
   ]);
   const [uploadedHeader, setUploadedHeader] = useState([]);
+  const [selectedHeaders, setSelectedHeaders] = useState({});
+
   const location = useLocation();
   const [submitLoading, setSubmitLoading] = useState(false);
   const { state } = location;
@@ -28,9 +30,17 @@ const HeaderMatching = () => {
     setUploadedHeader(csvHeaders);
   }, []);
   console.log(state);
-
+  // Handle change event for each select
+  const handleCsvHeaderChange = (key, value) => {
+    console.log(key,value)
+    setSelectedHeaders((prev) => ({
+      ...prev,
+      [key]: value, // Update only the relevant key
+    }));
+  };
+console.log(selectedHeaders)
   return (
-    <div className="min-h-[100vh] overflow-y-auto overflow-x-auto flex justify-center bg-gradient-to-r from-blue-400 to-blue-600 items-center templatemapping pt-10 pb-12">
+    <div className="  overflow-y-auto overflow-x-auto flex justify-center bg-gradient-to-r from-blue-400 to-blue-600 items-center templatemapping pt-10 pb-5 ">
       <div className="w-[900px] bg-white p-6 rounded-lg shadow-md relative">
         <h1 className="text-blue-800 text-4xl text-center mb-10">Mapping</h1>
         <div className="relative">
@@ -38,59 +48,44 @@ const HeaderMatching = () => {
             <div className="flex w-full justify-around mb-4">
               <div className="w-1/3 text-center">
                 <label className="block text-xl text-black font-semibold">
-                  Uploaded CSV/Excel Header
+                  Result CSV/Excel Header
                 </label>
               </div>
               <div className="w-1/3 text-center">
                 <label className="block text-xl text-black font-semibold">
-                  Result CSV/Excel Header
+                  Uploaded CSV/Excel Header
                 </label>
               </div>
             </div>
             <div className="h-[50vh] overflow-y-auto">
-              {predefinedHeader &&
-                predefinedHeader.map((csvHeader, index) => {
-                  return (
-                    <div
-                      key={index}
-                      className="flex w-full justify-around mb-3"
+              {Array.from({ length: 13 }).map((csvHeader, index) => {
+                return (
+                  <div key={index} className="flex w-full justify-around mb-3">
+                    <div className="block w-1/3 py-1 me-10 text-xl font-semibold text-center border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500">
+                      <span>{predefinedHeader[index]}</span>
+                    </div>
+                    <div>----&gt;</div>
+                    <select
+                      className="block w-1/3 py-1 ms-10 text-xl font-semibold text-center border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      aria-label="Template Header"
+                      onChange={(e) =>
+                        handleCsvHeaderChange(index, e.target.value)
+                      }
+                      value={selectedHeaders[index] || ""}
                     >
-                      <select
-                        className="block w-1/3 py-1 me-10 text-xl font-semibold text-center border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                        aria-label="CSV Header Name"
-                        // onChange={(e) =>
-                        //   handleCsvHeaderChange(csvHeader, e.target.value)
-                        // }
-                        // value={csvHeader}
-                      >
-                        <option disabled defaultValue>
-                          Select CSV Header Name
-                        </option>
-                        {predefinedHeader.map((csvData, idx) => (
-                          <option key={idx} value={csvData}>
-                            {csvData}
+                      <option disabled value="">
+                        Select CSV Header Name
+                      </option>
+                      {uploadedHeader &&
+                        uploadedHeader.map((template, idx) => (
+                          <option key={idx} value={template}>
+                            {template}
                           </option>
                         ))}
-                      </select>
-                      <select
-                        className="block w-1/3 py-1 ms-10 text-xl font-semibold text-center border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                        aria-label="Template Header"
-                        // onChange={(e) =>
-                        //   handleTemplateHeaderChange(csvHeader, e.target.value)
-                        // }
-                        // value={selectedAssociations[csvHeader] || "UserFieldName"}
-                      >
-                        <option>UserFieldName</option>
-                        {uploadedHeader &&
-                          uploadedHeader.map((template, idx) => (
-                            <option key={idx} value={template}>
-                              {template}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  );
-                })}
+                    </select>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
