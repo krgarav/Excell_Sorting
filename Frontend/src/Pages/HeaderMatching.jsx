@@ -32,13 +32,24 @@ const HeaderMatching = () => {
   console.log(state);
   // Handle change event for each select
   const handleCsvHeaderChange = (key, value) => {
-    console.log(key,value)
+    // Check if the value is already present in uploadedHeader
+    // if (!uploadedHeader.includes(value)) {
+    //   setUploadedHeader((prev) => [...prev, value]); // Add the value if not present
+    // }
+
+    // Update selected headers
     setSelectedHeaders((prev) => ({
       ...prev,
       [key]: value, // Update only the relevant key
     }));
+
+    // Remove any previous selection of this key if changed
+    // setUploadedHeader((prev) =>
+    //   prev.filter((item) => item != value)
+    // );
   };
-console.log(selectedHeaders)
+  console.log(JSON.stringify(selectedHeaders))
+  // console.log(uploadedHeader);
   return (
     <div className="  overflow-y-auto overflow-x-auto flex justify-center bg-gradient-to-r from-blue-400 to-blue-600 items-center templatemapping pt-10 pb-5 ">
       <div className="w-[900px] bg-white p-6 rounded-lg shadow-md relative">

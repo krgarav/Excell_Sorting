@@ -83,7 +83,8 @@ const multipleUploadFile = (req, res) => {
     const parsedData = [];
     const filePath = path.join(__dirname, "../uploads", req.file.filename);
     const fileExtension = path.extname(req.file.filename).toLowerCase();
-    // console.log("Parsed Headers Object:", parsedMatchedHeader);
+    console.log("Parsed Headers Object:", parsedMatchedHeader);
+
     const predefinedHeader = [
       "SR_NO",
       "NAME",
@@ -311,48 +312,45 @@ const multipleUploadFile = (req, res) => {
           }
         });
     } else if (fileExtension === ".xls" || fileExtension === ".xlsx") {
-      console.log("called")
+      console.log(parsedMatchedHeader["0"])
+     
       try {
         const data = parseExcelFile(filePath); // Parsed data from Excel file
         let parsedData = []; // Initialize an array to store mapped rows
 
         data.forEach((row, rowIndex) => {
-          console.log(row)
-          let mappedRow = {}; // Initialize an object for the current row mapping
-
-          // Map the predefined headers to the current row's keys
-          predefinedHeader.forEach((header, index) => {
-            const originalKey = index.toString(); // Original key based on column index
-
-            if (row[originalKey] !== undefined) {
-              // Map the value to the new header key
-              mappedRow[header] = row[originalKey];
+          let mappedRow = {}; // Initialize a new object for the mapped row
+        
+          // Iterate over the predefinedHeader and map values based on parsedMatchedHeader
+          predefinedHeader.forEach((key,index) => {
+          //  console.log(key);
+          //  return
+            const mappedKey = parsedMatchedHeader[index]; // Get the corresponding key from parsedMatchedHeader
+            console.log(mappedKey)
+            // return
+            if (row[mappedKey] !== undefined) {
+              mappedRow[key] = row[mappedKey]; // Assign the value to the new key
             } else {
               console.warn(
-                `Row ${
-                  rowIndex + 1
-                }: Missing value for header "${header}" at column index ${index}`
+                `Row ${rowIndex + 1}: Missing value for key "${key}" mapped from "${mappedKey}"`
               );
             }
           });
-
-          // Log the current mapped row for debugging
-          console.log(`Mapped Row ${rowIndex + 1}:`, mappedRow);
-
-          // Push the mapped row into the parsedData array
+        
+          // Push the mapped row into parsedData
           parsedData.push(mappedRow);
         });
 
         // Log the final parsed data for comparison
         console.log("Final Parsed Data:", parsedData);
-return
+// return
         // Validation: Check if all required headers are present
-        try {
-          // validateHeaders(parsedData);
-        } catch (error) {
-          console.error("Header Validation Error:", error.message);
-          throw error; // Re-throw the error to stop execution if validation fails
-        }
+        // try {
+        //   validateHeaders(parsedData);
+        // } catch (error) {
+        //   console.error("Header Validation Error:", error.message);
+        //   throw error; // Re-throw the error to stop execution if validation fails
+        // }
 
         // Generate Excel from the processed data
         generateExcel(processParsedData(parsedData));
