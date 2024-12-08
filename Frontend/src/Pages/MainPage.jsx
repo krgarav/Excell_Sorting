@@ -43,6 +43,8 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor:"#454545",
+    minHeight:"100vh"
   },
   fileInputDiv: {
     display: "flex",
@@ -61,21 +63,12 @@ function MainPage() {
   // Handle file input change
   const handleFileChange = (data) => {
     const selectedFile = data;
-    if (selectedFile && selectedFile.type === "text/csv") {
+    if (selectedFile) {
       setFile(selectedFile);
-      setMessage(""); // Clear previous messages
-    } else if (
-      selectedFile.type === "application/vnd.ms-excel" || // .xls type
-      selectedFile.type ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" // .xlsx type
-    ) {
-      setMessage(""); // Clear previous messages
-      convertExcelToCsv(selectedFile).then((csvFile) => {
-        setFile(csvFile); // Set the converted CSV file in the state
-      }); // Convert Excel to CSV
+      setMessage("");
     } else {
       setFile(null);
-      setMessage("Please select a valid CSV file.");
+      setMessage("Please select a valid CSV/Excel file.");
     }
   };
   // Function to convert Excel to CSV
@@ -126,13 +119,12 @@ function MainPage() {
 
       const formData = new FormData();
       formData.append("excelFile", file);
-      formData.append("sourceDirectory", directoryPath); // Append directory path
 
       const res = await axios.post("http://localhost:7000/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         responseType: "blob",
       });
-      // Create a download link for the file
+
       const blob = res.data;
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -148,6 +140,18 @@ function MainPage() {
     } catch (error) {
       // On error, display toast and log error to console
       toast.error("An error occurred while processing the file.");
+      if (error?.response?.status === 300) {
+        error.response.data
+          .text()
+          .then((text) => {
+            const jsonData = JSON.parse(text);
+            navigate("/headermatching", { state: jsonData });
+            console.log(jsonData); // Logs the parsed JSON object
+          })
+          .catch((error) => {
+            console.error("Error parsing Blob to JSON:", error);
+          });
+      }
       console.error("Error:", error.response?.data || error.message);
     } finally {
       setIsProcessing(false);

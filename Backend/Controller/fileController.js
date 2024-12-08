@@ -199,8 +199,9 @@ if (!fs.existsSync(targetDirectory)) {
 const uploadFile = (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" }); // Send response and exit function
+      return res.status(400).json({ message: "No file uploaded" });
     }
+
     const expectedHeaders = [
       "SR_NO",
       "NAME",
@@ -216,14 +217,16 @@ const uploadFile = (req, res) => {
       "TOTAL_MARKS",
       "YEAR",
     ];
-    // Function to validate headers
+
+    let csvHeaders = []; // Store headers of uploaded file
+
     const validateHeaders = (data) => {
-      console.log(data[0])
       const fileHeaders = Object.keys(data[0]);
+      csvHeaders = fileHeaders; // Capture headers of the uploaded file
       const missingHeaders = expectedHeaders.filter(
         (header) => !fileHeaders.includes(header)
       );
-      console.log(missingHeaders);
+
       if (missingHeaders.length > 0) {
         throw new Error(
           `Missing required headers: ${missingHeaders.join(", ")}`
@@ -231,29 +234,88 @@ const uploadFile = (req, res) => {
       }
     };
 
+    const generateExcel = async (data) => {
+      const targetDirectory = path.join(__dirname, "../result");
+      if (!fs.existsSync(targetDirectory)) {
+        fs.mkdirSync(targetDirectory, { recursive: true });
+      }
+
+      const currentTime = new Date()
+        .toISOString()
+        .replace(/:/g, "-")
+        .replace("T", "_")
+        .split(".")[0];
+      const excelFilePath = path.join(
+        targetDirectory,
+        `processed_data_.xlsx`
+      );
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Processed Data");
+
+      const headers = [
+        { header: "SL_NO", key: "SL_NO", width: 10 },
+        { header: "ROLL_NO", key: "ROLL_NO", width: 10 },
+        { header: "NAME", key: "NAME", width: 20 },
+        { header: "FATHER_NAME", key: "FATHER_NAME", width: 20 },
+        { header: "CLASS", key: "CLASS_CODE", width: 10 },
+        { header: "SECTION", key: "SECTION", width: 10 },
+        { header: "SCHOOL", key: "SCHOOL", width: 20 },
+        { header: "TEHSIL", key: "TEHSIL", width: 15 },
+        { header: "50 OR LESS", key: "50 OR LESS", width: 12 },
+        { header: "51-80", key: "51-80", width: 12 },
+        { header: "81+", key: "81+", width: 12 },
+        { header: "HEADER", key: "HEADER", width: 20 },
+        { header: "DISTRICT", key: "DISTRICT", width: 15 },
+        { header: "STATE", key: "STATE", width: 15 },
+        { header: "YEAR", key: "YEAR", width: 10 },
+      ];
+
+      worksheet.columns = headers;
+
+      worksheet.getRow(1).eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "008000" },
+        };
+        cell.font = { bold: true, color: { argb: "FFFFFF" } };
+        cell.alignment = { horizontal: "center" };
+      });
+
+      data.forEach((row) => {
+        worksheet.addRow(row);
+      });
+
+      await workbook.xlsx.writeFile(excelFilePath);
+
+      return res.download(excelFilePath, "processed_data.xlsx", (err) => {
+        if (err) {
+          return res.status(500).json({
+            message: "Error downloading file",
+            error: err.message,
+          });
+        }
+      });
+    };
     const filePath = path.join(__dirname, "../uploads", req.file.filename);
     const fileExtension = path.extname(req.file.filename).toLowerCase();
-    const parsedData = []; // Array to store parsed rows
+    const parsedData = [];
 
     const parseExcelFile = (filePath) => {
       const workbook = xlsx.readFile(filePath);
-      const sheetName = workbook.SheetNames[0]; // Assuming data is in the first sheet
+      const sheetName = workbook.SheetNames[0];
       const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], {
-        defval: "", // Default blank cells to ""
+        defval: "",
       });
-    
-      // Ensure no new headers are added; only blank values are filled with ""
-      const cleanedRows = rows.map((row) => {
-        const cleanedRow = {};
-        Object.keys(row).forEach((key) => {
-          cleanedRow[key] = row[key] === undefined || row[key] === null ? "" : row[key];
-        });
-        return cleanedRow;
-      });
-    
-      return cleanedRows;
-    };
 
+      // Capture headers from the first row
+      if (rows.length > 0) {
+        csvHeaders = Object.keys(rows[0]);
+      }
+
+      return rows;
+    };
     const processParsedData = (data) => {
       data.forEach((row, index) => {
         try {
@@ -396,93 +458,25 @@ const uploadFile = (req, res) => {
       return data;
     };
 
-    const generateExcel = async (data) => {
-      const targetDirectory = path.join(__dirname, "../result");
-      if (!fs.existsSync(targetDirectory)) {
-        fs.mkdirSync(targetDirectory, { recursive: true });
-      }
-
-      // Format the current time for a valid file name
-      const currentTime = new Date()
-        .toISOString()
-        .replace(/:/g, "-")
-        .replace("T", "_")
-        .split(".")[0]; // Replace colons, keep date and time part only
-
-      const excelFilePath = path.join(
-        targetDirectory,
-        `processed_data_${currentTime}.xlsx`
-      );
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Processed Data");
-
-      // Define headers with styling
-      const headers = [
-        { header: "SL_NO", key: "SL_NO", width: 10 },
-        { header: "ROLL_NO", key: "ROLL_NO", width: 10 },
-        { header: "NAME", key: "NAME", width: 20 },
-        { header: "FATHER_NAME", key: "FATHER_NAME", width: 20 },
-        { header: "CLASS", key: "CLASS_CODE", width: 10 },
-        { header: "SECTION", key: "SECTION", width: 10 },
-        { header: "SCHOOL", key: "SCHOOL", width: 20 },
-        { header: "TEHSIL", key: "TEHSIL", width: 15 },
-        { header: "50 OR LESS", key: "50 OR LESS", width: 12 },
-        { header: "51-80", key: "51-80", width: 12 },
-        { header: "81+", key: "81+", width: 12 },
-        { header: "HEADER", key: "HEADER", width: 20 },
-        { header: "DISTRICT", key: "DISTRICT", width: 15 },
-        { header: "STATE", key: "STATE", width: 15 },
-        { header: "YEAR", key: "YEAR", width: 10 },
-      ];
-
-      worksheet.columns = headers;
-
-      // Apply styles to headers
-      worksheet.getRow(1).eachCell((cell) => {
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "008000" }, // Green background
-        };
-        cell.font = {
-          bold: true,
-          color: { argb: "000000" }, // Black text
-        };
-        cell.alignment = { horizontal: "center" };
-      });
-
-      // Add data rows
-      data.forEach((row) => {
-        worksheet.addRow(row);
-      });
-
-      await workbook.xlsx.writeFile(excelFilePath);
-
-      // Check if the response was already sent before calling download
-      if (!res.headersSent) {
-        return res.download(excelFilePath, "processed_data.xlsx", (err) => {
-          if (err) {
-            // Only send error if headers have not been sent
-            if (!res.headersSent) {
-              return res.status(500).json({
-                message: "Error downloading file",
-                error: err.message,
-              });
-            }
-          }
-        });
-      }
-    };
 
     if (fileExtension === ".csv") {
       fs.createReadStream(filePath)
         .pipe(csvParser())
         .on("data", (row) => parsedData.push(row))
         .on("end", () => {
-          // Now call generateExcel with the parsed data
-          validateHeaders(parsedData);
-          const procss = processParsedData(parsedData);
-          generateExcel(procss);
+          try {
+            validateHeaders(parsedData);
+            const processedData = processParsedData(parsedData);
+            generateExcel(processedData);
+          } catch (error) {
+            if (!res.headersSent) {
+              return res.status(400).json({
+                success: "false",
+                message: error.message,
+                csvHeaders,
+              });
+            }
+          }
         })
         .on("error", (error) => {
           if (!res.headersSent) {
@@ -490,13 +484,24 @@ const uploadFile = (req, res) => {
               success: "false",
               message: "Error processing file",
               error: error.message,
+              csvHeaders,
             });
           }
         });
     } else if (fileExtension === ".xls" || fileExtension === ".xlsx") {
-      const data = parseExcelFile(filePath);
-      validateHeaders(data);
-      generateExcel(processParsedData(data));
+      try {
+        const data = parseExcelFile(filePath);
+        validateHeaders(data);
+        generateExcel(processParsedData(data));
+      } catch (error) {
+        if (!res.headersSent) {
+          return res.status(300).json({
+            success: "false",
+            message: error.message,
+            csvHeaders,
+          });
+        }
+      }
     } else {
       return res.status(400).json({
         success: "false",
@@ -509,6 +514,7 @@ const uploadFile = (req, res) => {
         success: "false",
         message: "Error uploading file",
         error: error.message,
+        csvHeaders,
       });
     }
   }
