@@ -245,10 +245,7 @@ const uploadFile = (req, res) => {
         .replace(/:/g, "-")
         .replace("T", "_")
         .split(".")[0];
-      const excelFilePath = path.join(
-        targetDirectory,
-        `processed_data_.xlsx`
-      );
+      const excelFilePath = path.join(targetDirectory, `processed_data.xlsx`);
 
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Processed Data");
@@ -457,7 +454,6 @@ const uploadFile = (req, res) => {
       // Return the updated data
       return data;
     };
-
 
     if (fileExtension === ".csv") {
       fs.createReadStream(filePath)

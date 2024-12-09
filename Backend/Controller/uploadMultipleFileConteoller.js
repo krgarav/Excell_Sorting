@@ -5,67 +5,7 @@ const xlsx = require("xlsx");
 const ExcelJS = require("exceljs");
 const targetDirectory = "./result"; // Target directory to move files
 // Function to handle file upload and extract headers
-const generateExcel = async (data) => {
-  const targetDirectory = path.join(__dirname, "../result");
-  if (!fs.existsSync(targetDirectory)) {
-    fs.mkdirSync(targetDirectory, { recursive: true });
-  }
 
-  const currentTime = new Date()
-    .toISOString()
-    .replace(/:/g, "-")
-    .replace("T", "_")
-    .split(".")[0];
-  const excelFilePath = path.join(targetDirectory, `processed_data_.xlsx`);
-
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Processed Data");
-
-  const headers = [
-    { header: "SL_NO", key: "SL_NO", width: 10 },
-    { header: "ROLL_NO", key: "ROLL_NO", width: 10 },
-    { header: "NAME", key: "NAME", width: 20 },
-    { header: "FATHER_NAME", key: "FATHER_NAME", width: 20 },
-    { header: "CLASS", key: "CLASS_CODE", width: 10 },
-    { header: "SECTION", key: "SECTION", width: 10 },
-    { header: "SCHOOL", key: "SCHOOL", width: 20 },
-    { header: "TEHSIL", key: "TEHSIL", width: 15 },
-    { header: "50 OR LESS", key: "50 OR LESS", width: 12 },
-    { header: "51-80", key: "51-80", width: 12 },
-    { header: "81+", key: "81+", width: 12 },
-    { header: "HEADER", key: "HEADER", width: 20 },
-    { header: "DISTRICT", key: "DISTRICT", width: 15 },
-    { header: "STATE", key: "STATE", width: 15 },
-    { header: "YEAR", key: "YEAR", width: 10 },
-  ];
-
-  worksheet.columns = headers;
-
-  worksheet.getRow(1).eachCell((cell) => {
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "008000" },
-    };
-    cell.font = { bold: true, color: { argb: "FFFFFF" } };
-    cell.alignment = { horizontal: "center" };
-  });
-
-  data.forEach((row) => {
-    worksheet.addRow(row);
-  });
-
-  await workbook.xlsx.writeFile(excelFilePath);
-
-  return res.download(excelFilePath, "processed_data.xlsx", (err) => {
-    if (err) {
-      return res.status(500).json({
-        message: "Error downloading file",
-        error: err.message,
-      });
-    }
-  });
-};
 const multipleUploadFile = (req, res) => {
   try {
     const { matchedHeader } = req.body;
@@ -100,6 +40,67 @@ const multipleUploadFile = (req, res) => {
       "TOTAL_MARKS",
       "YEAR",
     ];
+    const generateExcel = async (data) => {
+      const targetDirectory = path.join(__dirname, "../result");
+      if (!fs.existsSync(targetDirectory)) {
+        fs.mkdirSync(targetDirectory, { recursive: true });
+      }
+
+      const currentTime = new Date()
+        .toISOString()
+        .replace(/:/g, "-")
+        .replace("T", "_")
+        .split(".")[0];
+      const excelFilePath = path.join(targetDirectory, `processed_data.xlsx`);
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Processed Data");
+
+      const headers = [
+        { header: "SL_NO", key: "SL_NO", width: 10 },
+        { header: "ROLL_NO", key: "ROLL_NO", width: 10 },
+        { header: "NAME", key: "NAME", width: 20 },
+        { header: "FATHER_NAME", key: "FATHER_NAME", width: 20 },
+        { header: "CLASS", key: "CLASS_CODE", width: 10 },
+        { header: "SECTION", key: "SECTION", width: 10 },
+        { header: "SCHOOL", key: "SCHOOL", width: 20 },
+        { header: "TEHSIL", key: "TEHSIL", width: 15 },
+        { header: "50 OR LESS", key: "50 OR LESS", width: 12 },
+        { header: "51-80", key: "51-80", width: 12 },
+        { header: "81+", key: "81+", width: 12 },
+        { header: "HEADER", key: "HEADER", width: 20 },
+        { header: "DISTRICT", key: "DISTRICT", width: 15 },
+        { header: "STATE", key: "STATE", width: 15 },
+        { header: "YEAR", key: "YEAR", width: 10 },
+      ];
+
+      worksheet.columns = headers;
+
+      worksheet.getRow(1).eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "008000" },
+        };
+        cell.font = { bold: true, color: { argb: "FFFFFF" } };
+        cell.alignment = { horizontal: "center" };
+      });
+
+      data.forEach((row) => {
+        worksheet.addRow(row);
+      });
+
+      await workbook.xlsx.writeFile(excelFilePath);
+
+      return res.download(excelFilePath, "processed_data.xlsx", (err) => {
+        if (err) {
+          return res.status(500).json({
+            message: "Error downloading file",
+            error: err.message,
+          });
+        }
+      });
+    };
     const processParsedData = (data) => {
       data.forEach((row, index) => {
         try {
@@ -312,38 +313,40 @@ const multipleUploadFile = (req, res) => {
           }
         });
     } else if (fileExtension === ".xls" || fileExtension === ".xlsx") {
-      console.log(parsedMatchedHeader["0"])
-     
+      console.log(parsedMatchedHeader["0"]);
+
       try {
         const data = parseExcelFile(filePath); // Parsed data from Excel file
         let parsedData = []; // Initialize an array to store mapped rows
 
         data.forEach((row, rowIndex) => {
           let mappedRow = {}; // Initialize a new object for the mapped row
-        
+
           // Iterate over the predefinedHeader and map values based on parsedMatchedHeader
-          predefinedHeader.forEach((key,index) => {
-          //  console.log(key);
-          //  return
+          predefinedHeader.forEach((key, index) => {
+            //  console.log(key);
+            //  return
             const mappedKey = parsedMatchedHeader[index]; // Get the corresponding key from parsedMatchedHeader
-            console.log(mappedKey)
+            console.log(mappedKey);
             // return
             if (row[mappedKey] !== undefined) {
               mappedRow[key] = row[mappedKey]; // Assign the value to the new key
             } else {
               console.warn(
-                `Row ${rowIndex + 1}: Missing value for key "${key}" mapped from "${mappedKey}"`
+                `Row ${
+                  rowIndex + 1
+                }: Missing value for key "${key}" mapped from "${mappedKey}"`
               );
             }
           });
-        
+
           // Push the mapped row into parsedData
           parsedData.push(mappedRow);
         });
 
         // Log the final parsed data for comparison
         console.log("Final Parsed Data:", parsedData);
-// return
+        // return
         // Validation: Check if all required headers are present
         // try {
         //   validateHeaders(parsedData);
