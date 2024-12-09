@@ -3,13 +3,16 @@ const path = require("path");
 const csvParser = require("csv-parser");
 const xlsx = require("xlsx");
 const ExcelJS = require("exceljs");
-const targetDirectory = "./result"; // Target directory to move files
 
+const targetDirectory = "./result"; // Target directory to move files
+const filePaths = "uploads/";
 // Ensure target directory exists
 if (!fs.existsSync(targetDirectory)) {
   fs.mkdirSync(targetDirectory, { recursive: true });
 }
-
+if (!fs.existsSync(filePaths)) {
+  fs.mkdirSync(filePaths, { recursive: true });
+}
 // Controller for handling file upload and processing
 // const uploadFile = (req, res) => {
 //   try {
@@ -235,7 +238,7 @@ const uploadFile = (req, res) => {
     };
 
     const generateExcel = async (data) => {
-      const targetDirectory = path.join(__dirname, "../result");
+      // const targetDirectory = path.join(__dirname, "../result");
       if (!fs.existsSync(targetDirectory)) {
         fs.mkdirSync(targetDirectory, { recursive: true });
       }
@@ -295,7 +298,7 @@ const uploadFile = (req, res) => {
         }
       });
     };
-    const filePath = path.join(__dirname, "../uploads", req.file.filename);
+    const filePath = filePaths + req.file.filename;
     const fileExtension = path.extname(req.file.filename).toLowerCase();
     const parsedData = [];
 

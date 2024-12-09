@@ -4,8 +4,14 @@ const csvParser = require("csv-parser");
 const xlsx = require("xlsx");
 const ExcelJS = require("exceljs");
 const targetDirectory = "./result"; // Target directory to move files
-// Function to handle file upload and extract headers
-
+const filePaths = "uploads/";
+// Ensure target directory exists
+if (!fs.existsSync(targetDirectory)) {
+  fs.mkdirSync(targetDirectory, { recursive: true });
+}
+if (!fs.existsSync(filePaths)) {
+  fs.mkdirSync(filePaths, { recursive: true });
+}
 const multipleUploadFile = (req, res) => {
   try {
     const { matchedHeader } = req.body;
@@ -21,9 +27,8 @@ const multipleUploadFile = (req, res) => {
     // Parse the JSON string into an object
     const parsedMatchedHeader = JSON.parse(matchedHeader);
     const parsedData = [];
-    const filePath = path.join(__dirname, "../uploads", req.file.filename);
+    const filePath = filePaths + req.file.filename;
     const fileExtension = path.extname(req.file.filename).toLowerCase();
-    console.log("Parsed Headers Object:", parsedMatchedHeader);
 
     const predefinedHeader = [
       "SR_NO",
@@ -41,10 +46,10 @@ const multipleUploadFile = (req, res) => {
       "YEAR",
     ];
     const generateExcel = async (data) => {
-      const targetDirectory = path.join(__dirname, "../result");
-      if (!fs.existsSync(targetDirectory)) {
-        fs.mkdirSync(targetDirectory, { recursive: true });
-      }
+      // const targetDirectory = path.join(__dirname, "../result");
+      // if (!fs.existsSync(targetDirectory)) {
+      //   fs.mkdirSync(targetDirectory, { recursive: true });
+      // }
 
       const currentTime = new Date()
         .toISOString()
@@ -313,8 +318,6 @@ const multipleUploadFile = (req, res) => {
           }
         });
     } else if (fileExtension === ".xls" || fileExtension === ".xlsx") {
-      console.log(parsedMatchedHeader["0"]);
-
       try {
         const data = parseExcelFile(filePath); // Parsed data from Excel file
         let parsedData = []; // Initialize an array to store mapped rows
@@ -327,7 +330,7 @@ const multipleUploadFile = (req, res) => {
             //  console.log(key);
             //  return
             const mappedKey = parsedMatchedHeader[index]; // Get the corresponding key from parsedMatchedHeader
-            console.log(mappedKey);
+
             // return
             if (row[mappedKey] !== undefined) {
               mappedRow[key] = row[mappedKey]; // Assign the value to the new key
@@ -344,8 +347,6 @@ const multipleUploadFile = (req, res) => {
           parsedData.push(mappedRow);
         });
 
-        // Log the final parsed data for comparison
-        console.log("Final Parsed Data:", parsedData);
         // return
         // Validation: Check if all required headers are present
         // try {

@@ -18,7 +18,7 @@ const styles = {
     borderRadius: "8px",
     textAlign: "center",
     margin: "auto",
-    marginTop: "50px",
+    marginTop: "10rem",
   },
   form: {
     display: "flex",
@@ -43,14 +43,21 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor:"#454545",
-    minHeight:"100vh"
+    backgroundColor: "#454545",
+    minHeight: "100vh",
+    backgroundImage: "url('/bgcolor.jpg')", // Reference the image in the public folder
+    backgroundSize: "cover", // Ensure the image covers the entire background
+    backgroundPosition: "center", // Center the image
+    backgroundRepeat: "no-repeat", // Avoid repeating the image
   },
   fileInputDiv: {
     display: "flex",
     flexDirection: "column",
     color: "black",
     margin: "10px",
+  },
+  h2: {
+    fontSize: "80px",
   },
 };
 
@@ -65,43 +72,12 @@ function MainPage() {
     const selectedFile = data;
     if (selectedFile) {
       setFile(selectedFile);
+
       setMessage("");
     } else {
       setFile(null);
       setMessage("Please select a valid CSV/Excel file.");
     }
-  };
-  // Function to convert Excel to CSV
-  const convertExcelToCsv = (excelFile) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        const data = e.target.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-
-        // Convert the first sheet to CSV format
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]]; // Get the first sheet
-        const csvData = XLSX.utils.sheet_to_csv(worksheet);
-
-        // Create a Blob from the CSV data
-        const blob = new Blob([csvData], { type: "text/csv" });
-
-        // Create a new File object for the CSV
-        const csvFile = new File([blob], "converted-file.csv", {
-          type: "text/csv",
-        });
-
-        // Resolve the promise with the CSV file
-        resolve(csvFile);
-      };
-
-      reader.onerror = (error) => {
-        reject(error); // Reject the promise if an error occurs
-      };
-
-      reader.readAsBinaryString(excelFile); // Read the Excel file as binary string
-    });
   };
   // Handle file upload (simulated)
   const handleUpload = async () => {
@@ -128,7 +104,7 @@ function MainPage() {
       const blob = res.data;
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "processed_data.csv"; // Set the name of the file to be downloaded
+      link.download = "processed_data.xlsx"; // Set the name of the file to be downloaded
       link.click(); // Trigger download
 
       // Optionally, you can clean up the link element after download
@@ -136,7 +112,6 @@ function MainPage() {
 
       // On successful upload
       toast.success("File uploaded and downloaded successfully!");
-      // navigate("/result", { state: res.data });
     } catch (error) {
       // On error, display toast and log error to console
       toast.error("An error occurred while processing the file.");
@@ -145,7 +120,7 @@ function MainPage() {
           .text()
           .then((text) => {
             const jsonData = JSON.parse(text);
-            navigate("/headermatching", { state: jsonData });
+            navigate("/headermatching", { state: { jsonData, file } });
             console.log(jsonData); // Logs the parsed JSON object
           })
           .catch((error) => {
@@ -161,28 +136,23 @@ function MainPage() {
   return (
     <div style={styles.wrapper}>
       <div style={styles.container}>
-        <h2 style={{ color: "black" }}>Upload and Process CSV</h2>
+        <h2
+          style={{
+            color: "black",
+            fontSize: "1.5rem",
+            fontWeight: "600",
+            marginBottom: "20px",
+          }}
+        >
+          Upload and Sort CSV/Excell
+        </h2>
         <form style={styles.form}>
           <UploadBtn
             onChange={(data) => {
               handleFileChange(data);
             }}
           />
-          {/* <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            // style={styles.fileInput}
-          />
-          <br /> */}
-          {/* <div style={styles.fileInputDiv}>
-            <label>Enter Directory Path</label>
-            <input
-              type="text"
-              onChange={handleDirectoryChange}
-              ref={directoryRef}
-            />
-          </div> */}
+
           <br />
           <button
             type="button"
